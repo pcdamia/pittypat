@@ -265,10 +265,6 @@ export default function App() {
     );
   }
 
-  // For sideBet and dealing phases, show the table frozen beneath overlays.
-  // For the table phase, show the interactive table.
-  const isTableInteractive = appPhase === 'table';
-
   // Determine which human seat is asking for the side bet modal
   const sideBetModalVisible =
     appPhase === 'sideBet' &&
@@ -287,13 +283,19 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TableScreen
-        state={gameState}
-        onAction={isTableInteractive ? handleAction : () => {}}
-        aiCountdown={aiCountdown}
-        balances={balances}
-        pot={pot}
-      />
+      {appPhase === 'table' ? (
+        <TableScreen
+          state={gameState}
+          onAction={handleAction}
+          aiCountdown={aiCountdown}
+          balances={balances}
+          pot={pot}
+        />
+      ) : (
+        /* Plain felt background while side-bet round and deal animation play out.
+           No cards are visible until the deal animation completes. */
+        <View style={styles.felt} />
+      )}
 
       {/* Side-bet human modal (only shown for the human player's turn) */}
       {sessionConfig && (
@@ -320,6 +322,10 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: '#1a472a',
+  },
+  felt: {
     flex: 1,
     backgroundColor: '#1a472a',
   },

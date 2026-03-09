@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": [
+      "ES2020"
+    ],
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@engine/*": [
+        "src/engine/*"
+      ],
+      "@ui/*": [
+        "src/ui/*"
+      ],
+      "@ai/*": [
+        "src/ai/*"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "App.tsx",
+    "*.ts",
+    "*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ],
+  "extends": "expo/tsconfig.base"
+}

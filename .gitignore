@@ -1,0 +1,16 @@
+node_modules/
+.expo/
+.expo-shared/
+dist/
+coverage/
+*.log
+.env
+.env.local
+.DS_Store
+*.pem
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+lib/
+.vscode/
+.idea/

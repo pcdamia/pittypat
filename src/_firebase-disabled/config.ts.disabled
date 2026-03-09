@@ -1,0 +1,74 @@
+/**
+ * Firebase configuration and initialization.
+ * For MVP: anonymous auth, Firestore, Cloud Functions.
+ * 
+ * NOTE: Firebase is lazily loaded to avoid crashes during local play.
+ * Only initializes when explicitly called.
+ */
+let firebaseApp: any = null;
+let firebaseAuth: any = null;
+let firebaseDb: any = null;
+let firebaseFunctions: any = null;
+
+const firebaseConfig = {
+  apiKey: 'AIzaSyD1zdR7Xnm4dUSn2hDA1j4CT8id1Qh3Cf0',
+  authDomain: 'pittypat-cf020.firebaseapp.com',
+  projectId: 'pittypat-cf020',
+  storageBucket: 'pittypat-cf020.firebasestorage.app',
+  messagingSenderId: '116611174955',
+  appId: '1:116611174955:web:d6bcf9b3c65398c585106e',
+};
+
+async function ensureInitialized() {
+  if (!firebaseApp) {
+    try {
+      // Dynamic imports to prevent side effects during module load
+      // Firebase is optional - only loads when needed for multiplayer
+      const firebaseModule = await import('firebase/app').catch(() => null);
+      if (!firebaseModule) {
+        throw new Error('Firebase not installed. Run: npm install firebase');
+      }
+      const { initializeApp, getApps } = firebaseModule;
+      const { getAuth } = await import('firebase/auth');
+      const { getFirestore } = await import('firebase/firestore');
+      const { getFunctions } = await import('firebase/functions');
+      
+      if (getApps().length === 0) {
+        firebaseApp = initializeApp(firebaseConfig);
+      } else {
+        firebaseApp = getApps()[0];
+      }
+      firebaseAuth = getAuth(firebaseApp);
+      firebaseDb = getFirestore(firebaseApp);
+      firebaseFunctions = getFunctions(firebaseApp);
+    } catch (error) {
+      console.error('Firebase initialization error:', error);
+      throw new Error('Firebase not available. Install with: npm install firebase');
+    }
+  }
+}
+
+export async function getAuthInstance() {
+  await ensureInitialized();
+  if (!firebaseAuth) throw new Error('Firebase auth not initialized');
+  return firebaseAuth;
+}
+
+export async function getDbInstance() {
+  await ensureInitialized();
+  if (!firebaseDb) throw new Error('Firebase db not initialized');
+  return firebaseDb;
+}
+
+export async function getFunctionsInstance() {
+  await ensureInitialized();
+  if (!firebaseFunctions) throw new Error('Firebase functions not initialized');
+  return firebaseFunctions;
+}
+
+export async function signInAnon() {
+  const { signInAnonymously } = await import('firebase/auth');
+  const auth = await getAuthInstance();
+  const userCredential = await signInAnonymously(auth);
+  return userCredential.user;
+}

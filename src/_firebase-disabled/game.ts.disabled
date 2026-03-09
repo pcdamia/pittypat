@@ -1,0 +1,72 @@
+/**
+ * Firestore model and Cloud Function helpers for Pitty Pat.
+ * Model: games/{id}, players subcollection, events log.
+ * 
+ * NOTE: Uses dynamic imports to prevent Firebase from loading during local play.
+ */
+import type { GameState, Action } from '../engine/types';
+import { gameStateToJSON, gameStateFromJSON } from '../engine/helpers';
+import { getDbInstance, getFunctionsInstance } from './config';
+
+export interface GameDoc {
+  state: Record<string, unknown>; // GameState serialized (deadRanks as array)
+  phase: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+export interface PlayerDoc {
+  seatIndex: number;
+  userId: string;
+  isHuman: boolean;
+  joinedAt: Timestamp;
+}
+
+export interface GameEventDoc {
+  action: Record<string, unknown>; // Action serialized
+  seatIndex: number;
+  timestamp: Timestamp;
+}
+
+export async function createGame(gameId: string, initialState: GameState): Promise<void> {
+  const { doc, setDoc, Timestamp } = await import('firebase/firestore');
+  const db = await getDbInstance();
+  const gameRef = doc(db, 'games', gameId);
+  const stateJson = gameStateToJSON(initialState);
+  await setDoc(gameRef, {
+    state: stateJson,
+    phase: initialState.phase,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  });
+}
+
+export async function getGame(gameId: string): Promise<GameState | null> {
+  const { doc, getDoc } = await import('firebase/firestore');
+  const db = await getDbInstance();
+  const gameRef = doc(db, 'games', gameId);
+  const snap = await getDoc(gameRef);
+  if (!snap.exists()) return null;
+  const data = snap.data() as GameDoc;
+  return gameStateFromJSON(data.state as Record<string, unknown>) as GameState;
+}
+
+export async function subscribeToGame(gameId: string, callback: (state: GameState) => void): Promise<() => void> {
+  const { doc, onSnapshot } = await import('firebase/firestore');
+  const db = await getDbInstance();
+  const gameRef = doc(db, 'games', gameId);
+  return onSnapshot(gameRef, (snap) => {
+    if (snap.exists()) {
+      const data = snap.data() as GameDoc;
+      const state = gameStateFromJSON(data.state as Record<string, unknown>) as GameState;
+      callback(state);
+    }
+  });
+}
+
+export async function submitAction(gameId: string, action: Action): Promise<void> {
+  const { httpsCallable } = await import('firebase/functions');
+  const functions = await getFunctionsInstance();
+  const executeAction = httpsCallable(functions, 'executeAction');
+  await executeAction({ gameId, action });
+}
